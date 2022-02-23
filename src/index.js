@@ -1,5 +1,5 @@
-const services = require('./services');
+const storages = require('./storage');
 
-module.exports = function(type, config) {
-  return tableName => (new service[type](config, tableName));
+module.exports = function(type) {
+  return tableName => (new storages[type](tableName, config));
 }

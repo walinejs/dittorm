@@ -1,8 +1,7 @@
 /* eslint-disable no-unused-vars */
 
-module.exports = class extends think.Service {
+module.exports = class {
   constructor(tableName) {
-    super();
     this.tableName = tableName;
   }
 

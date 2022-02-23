@@ -1,6 +1,8 @@
+// TODO
 const path = require('path');
 const { parseString, writeToString } = require('fast-csv');
-const request = require('request-promise-native');
+// const request = require('request-promise-native');
+const { request } = require('undici');
 const Base = require('./base');
 
 const CSV_HEADERS = {

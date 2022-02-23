@@ -2,11 +2,19 @@ const { Deta } = require('deta');
 const { performance } = require('perf_hooks');
 const Base = require('./base');
 
-module.exports = class extends Base {
-  constructor(tableName) {
-    super(tableName);
-    const deta = Deta(process.env.DETA_PROJECT_KEY);
+module.exports = class DetaModel extends Base {
+  static connect(config) {
+    return Deta(config.token);
+  }
+
+  constructor(tableName, config) {
+    super(...args);
+    const deta = DetaModel.connect(config);
     this.instance = deta.Base(tableName);
+  }
+
+  get _pk() {
+    return 'key';
   }
 
   complex(obj, keys) {
@@ -34,8 +42,8 @@ module.exports = class extends Base {
   async uuid() {
     const items = await this.select({}, { limit: 1 });
     let lastKey;
-    if (items.length && !isNaN(parseInt(items[0].objectId))) {
-      lastKey = parseInt(items[0].objectId);
+    if (items.length && !isNaN(parseInt(items[0][this._pk]))) {
+      lastKey = parseInt(items[0][this._pk]);
     } else {
       lastKey = Number.MAX_SAFE_INTEGER - performance.now();
     }
@@ -47,7 +55,7 @@ module.exports = class extends Base {
       return;
     }
 
-    const parseKey = (k) => (k === 'objectId' ? 'key' : k);
+    const parseKey = k => k;
     const conditions = {};
     const _isArrayKeys = [];
     for (let k in where) {
@@ -70,21 +78,11 @@ module.exports = class extends Base {
             _isArrayKeys.push(parseKey(k));
           }
           break;
+        
         case 'NOT IN':
-          /**
-           * deta base doesn't support not equal with multiple value query
-           * so we have to transfer it into equal with some value in most of scene
-           */
-          if (Array.isArray(where[k][1]) && parseKey(k) === 'status') {
-            const STATUS = ['approved', 'waiting', 'spam'];
-            let val = STATUS.filter((s) => !where[k][1].includes(s));
-            if (val.length === 1) {
-              val = val[0];
-            }
-            conditions[parseKey(k)] = val;
-          }
-          conditions[parseKey(k) + '?ne'] = where[k][1];
+          console.warn(`deta base doesn't support not equal with multiple value query`);
           break;
+
         case 'LIKE': {
           const first = where[k][1][0];
           const last = where[k][1].slice(-1);
@@ -164,14 +162,9 @@ module.exports = class extends Base {
       data = items || [];
     }
 
-    data = data.map(({ key, ...cmt }) => ({
-      ...cmt,
-      objectId: key,
-    }));
-
     if (Array.isArray(field)) {
       const fieldMap = new Set(field);
-      fieldMap.add('objectId');
+      fieldMap.add(this._pk);
       data.forEach((item) => {
         for (const k in item) {
           if (!fieldMap.has(k)) {
@@ -199,9 +192,7 @@ module.exports = class extends Base {
   async add(data) {
     const uuid = await this.uuid();
     const resp = await this.instance.put(data, uuid);
-    resp.objectId = resp.key;
-    delete resp.key;
-    return resp;
+    return resp[this._pk];
   }
 
   async update(data, where) {
@@ -210,7 +201,7 @@ module.exports = class extends Base {
       items.map(async (item) => {
         const updateData = typeof data === 'function' ? data(item) : data;
         const nextData = { ...item, ...updateData };
-        await this.instance.put(nextData, item.objectId);
+        await this.instance.put(nextData, item[this._pk]);
         return nextData;
       })
     );
@@ -219,7 +210,7 @@ module.exports = class extends Base {
   async delete(where) {
     const items = await this.select(where);
     return Promise.all(
-      items.map(({ objectId }) => this.instance.delete(objectId))
+      items.map((item) => this.instance.delete(item[this._pk]))
     );
   }
 };

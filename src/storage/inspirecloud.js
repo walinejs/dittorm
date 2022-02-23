@@ -1,10 +1,18 @@
 const inspirecloud = require('@byteinspire/api');
 const Base = require('./base');
 
-module.exports = class extends Base {
-  constructor(tableName) {
-    super(tableName);
-    this.db = inspirecloud.db;
+module.exports = class InspireModel extends Base {
+  static connect() {
+    return inspirecloud.db;
+  }
+
+  constructor(_tableName, config) {
+    super(...args);
+    this.db = InspireModel.connect(config);
+  }
+
+  get _pk() {
+    return '_id';
   }
 
   parseWhere(where) {
@@ -13,7 +21,7 @@ module.exports = class extends Base {
       return _where;
     }
 
-    const parseKey = (k) => (k === 'objectId' ? '_id' : k);
+    const parseKey = (k) => k;
     for (const k in where) {
       if (k === '_complex') {
         continue;
@@ -21,7 +29,7 @@ module.exports = class extends Base {
 
       if (think.isString(where[k])) {
         _where[parseKey(k)] =
-          k === 'objectId' ? this.db.ObjectId(where[k]) : where[k];
+          k === this._pk ? this.db.ObjectId(where[k]) : where[k];
         continue;
       }
       if (where[k] === undefined) {
@@ -34,7 +42,7 @@ module.exports = class extends Base {
             case 'IN':
               _where[parseKey(k)] = {
                 $in:
-                  k === 'objectId'
+                  k === this._pk
                     ? where[k][1].map(this.db.ObjectId)
                     : where[k][1],
               };
@@ -42,7 +50,7 @@ module.exports = class extends Base {
             case 'NOT IN':
               _where[parseKey(k)] = {
                 $nin:
-                  k === 'objectId'
+                  k === this._pk
                     ? where[k][1].map(this.db.ObjectId)
                     : where[k][1],
               };
@@ -117,12 +125,7 @@ module.exports = class extends Base {
       query.projection(_field);
     }
 
-    const data = await query.find();
-    data.forEach((item) => {
-      item.objectId = item._id.toString();
-      delete item._id;
-    });
-    return data;
+    return query.find();
   }
 
   async select(where, options = {}) {
@@ -150,9 +153,7 @@ module.exports = class extends Base {
     const tableData = instance.create(data);
     await instance.save(tableData);
 
-    tableData.objectId = tableData._id.toString();
-    delete tableData._id;
-    return tableData;
+    return tableData._id.toString();
   }
 
   async update(data, where) {

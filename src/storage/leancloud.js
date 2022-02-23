@@ -1,18 +1,20 @@
 const AV = require('leancloud-storage');
 const Base = require('./base');
-const { LEAN_ID, LEAN_KEY, LEAN_MASTER_KEY, LEAN_SERVER } = process.env;
+module.exports = class LeanCloudModel extends Base {
+  static connect(config) {
+    AV.Cloud.useMasterKey(config.masterKey);
+    AV.init(config);
+  }
 
-if (LEAN_ID && LEAN_KEY && LEAN_MASTER_KEY) {
-  AV.Cloud.useMasterKey(true);
-  AV.init({
-    appId: LEAN_ID,
-    appKey: LEAN_KEY,
-    masterKey: LEAN_MASTER_KEY,
-    // required for leancloud china
-    serverURL: LEAN_SERVER,
-  });
-}
-module.exports = class extends Base {
+  constructor(_tableName, config) {
+    super(...args);
+    LeanCloudModel.connect(config);
+  }
+
+  get _pk() {
+    return 'objectId';
+  }
+
   parseWhere(className, where) {
     const instance = new AV.Query(className);
     if (think.isEmpty(where)) {
@@ -150,7 +152,7 @@ module.exports = class extends Base {
     instance.setACL(acl);
 
     const resp = await instance.save();
-    return resp.toJSON();
+    return resp.toJSON()[this._pk];
   }
 
   async update(data, where) {

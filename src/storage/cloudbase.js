@@ -1,19 +1,27 @@
 const cloudbase = require('@cloudbase/node-sdk');
 const Base = require('./base');
 
-const { TCB_ENV, TCB_ID, TCB_KEY } = process.env;
-const app = cloudbase.init({
-  env: TCB_ENV,
-  secretId: TCB_ID,
-  secretKey: TCB_KEY,
-});
 
-const db = app.database();
-const _ = db.command;
 const collections = {};
 
-module.exports = class extends Base {
+module.exports = class CloudBase extends Base {
+  static connect(config) {
+    const app = cloudbase.init(config);
+    const db = app.database();
+    return db;
+  }
+
+  constructor(_tableName, config) {
+    super(...args);
+    this.db = CloudBase.connect(config);
+  }
+
+  get _pk() {
+    return '_id';
+  }
+
   async collection(tableName) {
+    const db = this.db;
     if (collections[tableName]) {
       return db.collection(tableName);
     }
@@ -38,8 +46,9 @@ module.exports = class extends Base {
       return {};
     }
 
+    const _ = this.db.command;
     const filter = {};
-    const parseKey = (k) => (k === 'objectId' ? '_id' : k);
+    const parseKey = (k) => k;
     for (let k in where) {
       if (k === '_complex') {
         continue;
@@ -128,10 +137,7 @@ module.exports = class extends Base {
     }
 
     const { data } = await instance.get();
-    return data.map(({ _id, ...cmt }) => ({
-      ...cmt,
-      objectId: _id.toString(),
-    }));
+    return data;
   }
 
   async select(where, options = {}) {
@@ -156,7 +162,7 @@ module.exports = class extends Base {
   async add(data) {
     const instance = await this.collection(this.tableName);
     const { id } = await instance.add(data);
-    return { ...data, objectId: id };
+    return id;
   }
 
   async update(data, where) {
