@@ -7,7 +7,7 @@ module.exports = class LeanCloudModel extends Base {
     AV.init(config);
   }
 
-  constructor(_tableName, config) {
+  constructor(tableName, config) {
     super(tableName, config);
     LeanCloudModel.connect(config);
     this.pk = config.primaryKey;
@@ -159,11 +159,10 @@ module.exports = class LeanCloudModel extends Base {
     acl.setPublicWriteAccess(write);
     instance.setACL(acl);
 
-    const resp = await instance.save();
-    const data = resp.toJSON();
-    data[this.pk] = data[this._pk];
-    delete data[this._pk];
-    return data;
+    const resp = (await instance.save()).toJSON();
+    resp[this.pk] = resp[this._pk];
+    delete resp[this._pk];
+    return resp;
   }
 
   async update(data, where) {

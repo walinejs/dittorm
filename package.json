@@ -4,7 +4,7 @@
   "description": "waline orm supports multiple serverless service",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "nyc ava test/index.js && nyc report --reporter=html"
   },
   "repository": {
     "type": "git",
@@ -30,5 +30,10 @@
     "think-model-sqlite": "^1.2.2",
     "think-mongo": "^2.1.2",
     "undici": "^4.14.1"
+  },
+  "devDependencies": {
+    "ava": "^4.0.1",
+    "dotenv": "^16.0.0",
+    "nyc": "^15.1.0"
   }
 }
