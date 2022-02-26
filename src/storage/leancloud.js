@@ -1,4 +1,5 @@
 const AV = require('leancloud-storage');
+const helper = require('think-helper');
 const Base = require('./base');
 module.exports = class LeanCloudModel extends Base {
   static connect(config) {
@@ -7,7 +8,7 @@ module.exports = class LeanCloudModel extends Base {
   }
 
   constructor(_tableName, config) {
-    super(...args);
+    super(tableName, config);
     LeanCloudModel.connect(config);
   }
 
@@ -17,7 +18,7 @@ module.exports = class LeanCloudModel extends Base {
 
   parseWhere(className, where) {
     const instance = new AV.Query(className);
-    if (think.isEmpty(where)) {
+    if (helper.isEmpty(where)) {
       return instance;
     }
 
@@ -26,52 +27,53 @@ module.exports = class LeanCloudModel extends Base {
         continue;
       }
 
-      if (think.isString(where[k])) {
+      if (helper.isString(where[k])) {
         instance.equalTo(k, where[k]);
         continue;
       }
 
       if (where[k] === undefined) {
         instance.doesNotExist(k);
+        continue;
       }
 
-      if (Array.isArray(where[k])) {
-        if (where[k][0]) {
-          const handler = where[k][0].toUpperCase();
-          switch (handler) {
-            case 'IN':
-              instance.containedIn(k, where[k][1]);
-              break;
-            case 'NOT IN':
-              instance.notContainedIn(k, where[k][1]);
-              break;
-            case 'LIKE': {
-              const first = where[k][1][0];
-              const last = where[k][1].slice(-1);
-              if (first === '%' && last === '%') {
-                instance.contains(k, where[k][1].slice(1, -1));
-              } else if (first === '%') {
-                instance.endsWith(k, where[k][1].slice(1));
-              } else if (last === '%') {
-                instance.startsWith(k, where[k][1].slice(0, -1));
-              }
-              break;
-            }
-            case '!=':
-              instance.notEqualTo(k, where[k][1]);
-              break;
-            case '>':
-              instance.greaterThan(k, where[k][1]);
-              break;
+      if (!Array.isArray(where[k]) || !where[k][0]) {
+        continue;
+      }
+
+      const handler = where[k][0].toUpperCase();
+      switch (handler) {
+        case 'IN':
+          instance.containedIn(k, where[k][1]);
+          break;
+        case 'NOT IN':
+          instance.notContainedIn(k, where[k][1]);
+          break;
+        case 'LIKE': {
+          const first = where[k][1][0];
+          const last = where[k][1].slice(-1);
+          if (first === '%' && last === '%') {
+            instance.contains(k, where[k][1].slice(1, -1));
+          } else if (first === '%') {
+            instance.endsWith(k, where[k][1].slice(1));
+          } else if (last === '%') {
+            instance.startsWith(k, where[k][1].slice(0, -1));
           }
+          break;
         }
+        case '!=':
+          instance.notEqualTo(k, where[k][1]);
+          break;
+        case '>':
+          instance.greaterThan(k, where[k][1]);
+          break;
       }
     }
     return instance;
   }
 
   where(className, where) {
-    if (!where._complex) {
+    if (helper.isEmpty(where) || !where._complex) {
       return this.parseWhere(className, where);
     }
 
@@ -161,7 +163,7 @@ module.exports = class LeanCloudModel extends Base {
 
     return Promise.all(
       ret.map(async (item) => {
-        if (think.isFunction(data)) {
+        if (helper.isFunction(data)) {
           item.set(data(item.toJSON()));
         } else {
           item.set(data);

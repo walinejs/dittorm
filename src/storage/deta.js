@@ -1,4 +1,5 @@
 const { Deta } = require('deta');
+const helper = require('think-helper');
 const { performance } = require('perf_hooks');
 const Base = require('./base');
 
@@ -8,7 +9,7 @@ module.exports = class DetaModel extends Base {
   }
 
   constructor(tableName, config) {
-    super(...args);
+    super(tableName, config);
     const deta = DetaModel.connect(config);
     this.instance = deta.Base(tableName);
   }
@@ -51,7 +52,7 @@ module.exports = class DetaModel extends Base {
   }
 
   where(where) {
-    if (think.isEmpty(where)) {
+    if (helper.isEmpty(where)) {
       return;
     }
 
@@ -59,7 +60,7 @@ module.exports = class DetaModel extends Base {
     const conditions = {};
     const _isArrayKeys = [];
     for (let k in where) {
-      if (think.isString(where[k])) {
+      if (helper.isString(where[k])) {
         conditions[parseKey(k)] = where[k];
         continue;
       }
@@ -67,14 +68,14 @@ module.exports = class DetaModel extends Base {
         conditions[parseKey(k)] = null;
       }
 
-      if (!think.isArray(where[k]) || !where[k][0]) {
+      if (!helper.isArray(where[k]) || !where[k][0]) {
         continue;
       }
       const handler = where[k][0].toUpperCase();
       switch (handler) {
         case 'IN':
           conditions[parseKey(k)] = where[k][1];
-          if (think.isArray(where[k][1])) {
+          if (helper.isArray(where[k][1])) {
             _isArrayKeys.push(parseKey(k));
           }
           break;
@@ -113,7 +114,7 @@ module.exports = class DetaModel extends Base {
 
   async select(where, { limit, offset, field } = {}) {
     const conditions = this.where(where);
-    if (think.isArray(conditions)) {
+    if (helper.isArray(conditions)) {
       return Promise.all(
         conditions.map((condition) =>
           this.select(condition, { limit, offset, field })
@@ -123,8 +124,8 @@ module.exports = class DetaModel extends Base {
 
     let data = [];
     if (
-      think.isObject(conditions) &&
-      think.isString(conditions.key) &&
+      helper.isObject(conditions) &&
+      helper.isString(conditions.key) &&
       conditions.key
     ) {
       /**
@@ -179,7 +180,7 @@ module.exports = class DetaModel extends Base {
 
   async count(where = {}) {
     const conditions = this.where(where);
-    if (think.isArray(conditions)) {
+    if (helper.isArray(conditions)) {
       return Promise.all(
         conditions.map((condition) => this.count(condition))
       ).then((counts) => counts.reduce((a, b) => a + b, 0));

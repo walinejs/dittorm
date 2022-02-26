@@ -1,141 +1,12 @@
-// TODO
 const path = require('path');
+const helper = require('think-helper');
 const { parseString, writeToString } = require('fast-csv');
-// const request = require('request-promise-native');
-const { request } = require('undici');
-const Base = require('./base');
-
-const CSV_HEADERS = {
-  Comment: [
-    'objectId',
-    'user_id',
-    'comment',
-    'insertedAt',
-    'ip',
-    'link',
-    'mail',
-    'nick',
-    'pid',
-    'rid',
-    'status',
-    'ua',
-    'url',
-    'createdAt',
-    'updatedAt',
-  ],
-  Counter: ['objectId', 'time', 'url', 'createdAt', 'updatedAt'],
-  Users: [
-    'objectId',
-    'display_name',
-    'email',
-    'password',
-    'type',
-    'url',
-    'avatar',
-    'github',
-    'twitter',
-    'facebook',
-    'google',
-    'weibo',
-    'qq',
-    'createdAt',
-    'updatedAt',
-  ],
-};
-
-class Github {
-  constructor(repo, token) {
-    this.token = token;
-    this.repo = repo;
-  }
-
-  // content api can only get file < 1MB
-  async get(filename) {
-    const resp = await request({
-      uri:
-        'https://api.github.com/repos/' +
-        path.join(this.repo, 'contents', filename),
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-        Authorization: 'token ' + this.token,
-        'User-Agent': 'Waline',
-      },
-      json: true,
-    }).catch((e) => {
-      const isTooLarge = e.message.includes('"too_large"');
-      if (!isTooLarge) {
-        throw e;
-      }
-      return this.getLargeFile(filename);
-    });
-
-    return {
-      data: Buffer.from(resp.content, 'base64').toString('utf-8'),
-      sha: resp.sha,
-    };
-  }
-
-  // blob api can get file larger than 1MB
-  async getLargeFile(filename) {
-    const { tree } = await request({
-      uri:
-        'https://api.github.com/repos/' +
-        path.join(this.repo, 'git/trees/HEAD') +
-        '?recursive=1',
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-        Authorization: 'token ' + this.token,
-        'User-Agent': 'Waline',
-      },
-      json: true,
-    });
-
-    const file = tree.find(({ path }) => path === filename);
-    if (!file) {
-      const error = new Error('NOT FOUND');
-      error.statusCode = 404;
-      throw error;
-    }
-
-    return request({
-      uri: file.url,
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-        Authorization: 'token ' + this.token,
-        'User-Agent': 'Waline',
-      },
-      json: true,
-    });
-  }
-
-  async set(filename, content, { sha }) {
-    return request({
-      uri:
-        'https://api.github.com/repos/' +
-        path.join(this.repo, 'contents', filename),
-      method: 'PUT',
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-        Authorization: 'token ' + this.token,
-        'User-Agent': 'Waline',
-      },
-      body: JSON.stringify({
-        sha,
-        message: 'feat(waline): update comment data',
-        content: Buffer.from(content, 'utf-8').toString('base64'),
-      }),
-    });
-  }
-}
+const Base = require('../base');
 
 module.exports = class extends Base {
-  constructor(tableName) {
-    super();
+  constructor(tableName, config) {
+    super(tableName, config);
     this.tableName = tableName;
-
-    const { GITHUB_TOKEN, GITHUB_REPO, GITHUB_PATH } = process.env;
-    this.git = new Github(GITHUB_REPO, GITHUB_TOKEN);
-    this.basePath = GITHUB_PATH;
   }
 
   async collection(tableName) {
@@ -151,7 +22,7 @@ module.exports = class extends Base {
       const data = [];
       data.sha = file.sha;
       return parseString(file.data, {
-        headers: file ? true : CSV_HEADERS[tableName],
+        headers: true,
       })
         .on('error', reject)
         .on('data', (row) => data.push(row))
@@ -162,7 +33,7 @@ module.exports = class extends Base {
   async save(tableName, data, sha) {
     const filename = path.join(this.basePath, tableName + '.csv');
     const csv = await writeToString(data, {
-      headers: sha ? true : CSV_HEADERS[tableName],
+      headers: true,
       writeHeaders: true,
     });
     return this.git.set(filename, csv, { sha });
@@ -170,7 +41,7 @@ module.exports = class extends Base {
 
   parseWhere(where) {
     const _where = [];
-    if (think.isEmpty(where)) {
+    if (helper.isEmpty(where)) {
       return _where;
     }
 
@@ -180,11 +51,7 @@ module.exports = class extends Base {
         continue;
       }
 
-      if (k === 'objectId') {
-        filters.push((item) => item.id === where[k]);
-        continue;
-      }
-      if (think.isString(where[k])) {
+      if (helper.isNumber(where[k]) || helper.isString(where[k])) {
         filters.push((item) => item[k] === where[k]);
         continue;
       }
@@ -285,7 +152,7 @@ module.exports = class extends Base {
       });
     }
 
-    return data.map(({ id, ...cmt }) => ({ ...cmt, objectId: id }));
+    return data;
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -301,16 +168,14 @@ module.exports = class extends Base {
     { access: { read = true, write = true } = { read: true, write: true } } = {}
   ) {
     const instance = await this.collection(this.tableName);
-    const id = Math.random().toString(36).substr(2, 15);
+    const id = Math.random().toString(36).slice(2, 15);
 
     instance.push({ ...data, id });
     await this.save(this.tableName, instance, instance.sha);
-    return { ...data, objectId: id };
+    return id;
   }
 
   async update(data, where) {
-    delete data.objectId;
-
     const instance = await this.collection(this.tableName);
     const list = this.where(instance, where);
 

@@ -1,22 +1,32 @@
-// TODO
+const Model = require('think-mongo/lib/model');
 const { ObjectId } = require('mongodb');
+const helper = require('think-helper');
 const Base = require('./base');
 
 module.exports = class extends Base {
+  constructor(tableName, config) {
+    super(tableName, config);
+    this.mongo = name => new Model(name, config);
+  }
+
+  get _pk() {
+    return '_id';
+  }
+  
   parseWhere(where) {
-    if (think.isEmpty(where)) {
+    if (helper.isEmpty(where)) {
       return {};
     }
 
     const filter = {};
-    const parseKey = (k) => (k === 'objectId' ? '_id' : k);
+    const parseKey = (k) => k;
     for (let k in where) {
       if (k === '_complex') {
         continue;
       }
-      if (think.isString(where[k])) {
+      if (helper.isString(where[k])) {
         filter[parseKey(k)] = {
-          $eq: k === 'objectId' ? ObjectId(where[k]) : where[k],
+          $eq: k === this._pk ? ObjectId(where[k]) : where[k],
         };
         continue;
       }
@@ -28,7 +38,7 @@ module.exports = class extends Base {
           const handler = where[k][0].toUpperCase();
           switch (handler) {
             case 'IN':
-              if (k === 'objectId') {
+              if (k === this._pk) {
                 filter[parseKey(k)] = { $in: where[k][1].map(ObjectId) };
               } else {
                 filter[parseKey(k)] = {
@@ -39,7 +49,7 @@ module.exports = class extends Base {
             case 'NOT IN':
               filter[parseKey(k)] = {
                 $nin:
-                  k === 'objectId' ? where[k][1].map(ObjectId) : where[k][1],
+                  k === this._pk ? where[k][1].map(ObjectId) : where[k][1],
               };
               break;
             case 'LIKE': {
@@ -108,11 +118,7 @@ module.exports = class extends Base {
       instance.field(field);
     }
 
-    const data = await instance.select();
-    return data.map(({ _id, ...cmt }) => ({
-      ...cmt,
-      objectId: _id.toString(),
-    }));
+    return instance.select();
   }
 
   async count(where = {}) {
@@ -124,7 +130,7 @@ module.exports = class extends Base {
   async add(data) {
     const instance = this.mongo(this.tableName);
     const id = await instance.add(data);
-    return { ...data, objectId: id.toString() };
+    return id;
   }
 
   async update(data, where) {

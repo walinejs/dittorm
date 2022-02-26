@@ -1,13 +1,17 @@
-const inspirecloud = require('@byteinspire/api');
+const { Inspirecloud } = require('@byteinspire/api');
+const helper = require('think-helper');
 const Base = require('./base');
-
 module.exports = class InspireModel extends Base {
-  static connect() {
+  static connect(config = {}) {
+    if(!config.endpoint) {
+      config.endpoint = process.env.INSPIRECLOUD_API_ENDPOINT || 'https://larkcloud-api.bytedance.com';
+    }
+    const inspirecloud = new Inspirecloud(config);
     return inspirecloud.db;
   }
 
-  constructor(_tableName, config) {
-    super(...args);
+  constructor(tableName, config) {
+    super(tableName, config);
     this.db = InspireModel.connect(config);
   }
 
@@ -17,7 +21,7 @@ module.exports = class InspireModel extends Base {
 
   parseWhere(where) {
     const _where = {};
-    if (think.isEmpty(where)) {
+    if (helper.isEmpty(where)) {
       return _where;
     }
 
@@ -27,7 +31,7 @@ module.exports = class InspireModel extends Base {
         continue;
       }
 
-      if (think.isString(where[k])) {
+      if (helper.isString(where[k])) {
         _where[parseKey(k)] =
           k === this._pk ? this.db.ObjectId(where[k]) : where[k];
         continue;

@@ -1,4 +1,5 @@
 const cloudbase = require('@cloudbase/node-sdk');
+const helper = require('think-helper');
 const Base = require('./base');
 
 
@@ -11,8 +12,8 @@ module.exports = class CloudBase extends Base {
     return db;
   }
 
-  constructor(_tableName, config) {
-    super(...args);
+  constructor(tableName, config) {
+    super(tableName, config);
     this.db = CloudBase.connect(config);
   }
 
@@ -42,7 +43,7 @@ module.exports = class CloudBase extends Base {
   }
 
   parseWhere(where) {
-    if (think.isEmpty(where)) {
+    if (helper.isEmpty(where)) {
       return {};
     }
 
@@ -53,7 +54,7 @@ module.exports = class CloudBase extends Base {
       if (k === '_complex') {
         continue;
       }
-      if (think.isString(where[k])) {
+      if (helper.isString(where[k])) {
         filter[parseKey(k)] = _.eq(where[k]);
         continue;
       }

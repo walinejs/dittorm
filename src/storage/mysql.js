@@ -1,10 +1,18 @@
-// TODO
+const Model = require('think-model/lib/model');
+const MySQL = require('think-model-mysql');
+const helper = require('think-helper');
 const Base = require('./base');
 
-module.exports = class extends Base {
+module.exports = class MySQLModel extends Base {
+  constructor(tableName, config) {
+    super(tableName, config);
+    config.handle = MySQL;
+    this.model = (tableName) => new Model(tableName, config);
+  }
+
   parseWhere(filter) {
     const where = {};
-    if (think.isEmpty(filter)) {
+    if (helper.isEmpty(filter)) {
       return where;
     }
 
@@ -23,8 +31,8 @@ module.exports = class extends Base {
         if (filter[k][0] === 'IN' && !filter[k][1].length) {
           continue;
         }
-        if (think.isDate(filter[k][1])) {
-          filter[k][1] = think.datetime(filter[k][1]);
+        if (helper.isDate(filter[k][1])) {
+          filter[k][1] = helper.datetime(filter[k][1]);
         }
       }
 

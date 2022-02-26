@@ -1,9 +1,12 @@
-// TODO
-const MySQL = require('./mysql');
+const Model = require('think-model/lib/model');
+const PostgreSQL = require('think-model-postgresql');
+const MySQLModel = require('./mysql');
 
-module.exports = class extends MySQL {
-  model(tableName) {
-    return super.model(tableName.toLowerCase());
+module.exports = class PostgreSQLModel extends MySQLModel {
+  constructor(tableName, config) {
+    super(tableName, config);
+    config.handle = PostgreSQL;
+    this.model = (tableName) => new Model(tableName.toLowerCase(), config);
   }
 
   async select(...args) {
