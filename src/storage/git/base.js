@@ -152,7 +152,11 @@ module.exports = class extends Base {
       });
     }
 
-    return data;
+    return data.map(item => {
+      item[this.pk] = item[this._pk];
+      delete item[this._pk];
+      return item;
+    });
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -172,10 +176,12 @@ module.exports = class extends Base {
 
     instance.push({ ...data, id });
     await this.save(this.tableName, instance, instance.sha);
-    return id;
+    return { ...data, [this.pk]: id };
   }
 
   async update(data, where) {
+    delete data[this.pk];
+    
     const instance = await this.collection(this.tableName);
     const list = this.where(instance, where);
 

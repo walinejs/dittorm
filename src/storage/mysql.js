@@ -8,6 +8,11 @@ module.exports = class MySQLModel extends Base {
     super(tableName, config);
     config.handle = MySQL;
     this.model = (tableName) => new Model(tableName, config);
+    this.pk = config.primaryKey;
+  }
+
+  get _pk() {
+    return 'id';
   }
 
   parseWhere(filter) {
@@ -17,8 +22,8 @@ module.exports = class MySQLModel extends Base {
     }
 
     for (const k in filter) {
-      if (k === 'objectId') {
-        where.id = filter[k];
+      if (k === this.pk) {
+        where[this._pk] = filter[k];
         continue;
       }
 
@@ -56,7 +61,11 @@ module.exports = class MySQLModel extends Base {
     }
 
     const data = await instance.select();
-    return data.map(({ id, ...cmt }) => ({ ...cmt, objectId: id }));
+    return data.map(item => {
+      item[this.pk] = item[this._pk];
+      delete item[this._pk];
+      return item;
+    });
   }
 
   async count(where = {}) {
@@ -68,7 +77,7 @@ module.exports = class MySQLModel extends Base {
   async add(data) {
     const instance = this.model(this.tableName);
     const id = await instance.add(data);
-    return { ...data, objectId: id };
+    return { ...data, [this.pk]: id };
   }
 
   async update(data, where) {

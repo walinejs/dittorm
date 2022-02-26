@@ -10,6 +10,7 @@ module.exports = class LeanCloudModel extends Base {
   constructor(_tableName, config) {
     super(tableName, config);
     LeanCloudModel.connect(config);
+    this.pk = config.primaryKey;
   }
 
   get _pk() {
@@ -22,8 +23,9 @@ module.exports = class LeanCloudModel extends Base {
       return instance;
     }
 
+    where[this._pk] = where[this.pk];
     for (const k in where) {
-      if (k === '_complex') {
+      if (k === '_complex' || k === this.pk) {
         continue;
       }
 
@@ -127,7 +129,11 @@ module.exports = class LeanCloudModel extends Base {
       data = data.concat(ret);
     } while (ret.length === 100);
 
-    return data;
+    return data.map(item => {
+      item[this.pk] = item[this._pk].toString();
+      delete item[this._pk];
+      return item;
+    });;
   }
 
   async count(where = {}, options = {}) {
@@ -154,7 +160,10 @@ module.exports = class LeanCloudModel extends Base {
     instance.setACL(acl);
 
     const resp = await instance.save();
-    return resp.toJSON()[this._pk];
+    const data = resp.toJSON();
+    data[this.pk] = data[this._pk];
+    delete data[this._pk];
+    return data;
   }
 
   async update(data, where) {

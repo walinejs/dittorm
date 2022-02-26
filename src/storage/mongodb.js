@@ -7,6 +7,7 @@ module.exports = class extends Base {
   constructor(tableName, config) {
     super(tableName, config);
     this.mongo = name => new Model(name, config);
+    this.pk = config.primaryKey;
   }
 
   get _pk() {
@@ -19,14 +20,14 @@ module.exports = class extends Base {
     }
 
     const filter = {};
-    const parseKey = (k) => k;
+    const parseKey = (k) => (k === this.pk ? this._pk : k);
     for (let k in where) {
       if (k === '_complex') {
         continue;
       }
       if (helper.isString(where[k])) {
         filter[parseKey(k)] = {
-          $eq: k === this._pk ? ObjectId(where[k]) : where[k],
+          $eq: k === this.pk ? ObjectId(where[k]) : where[k],
         };
         continue;
       }
@@ -38,7 +39,7 @@ module.exports = class extends Base {
           const handler = where[k][0].toUpperCase();
           switch (handler) {
             case 'IN':
-              if (k === this._pk) {
+              if (k === this.pk) {
                 filter[parseKey(k)] = { $in: where[k][1].map(ObjectId) };
               } else {
                 filter[parseKey(k)] = {
@@ -49,7 +50,7 @@ module.exports = class extends Base {
             case 'NOT IN':
               filter[parseKey(k)] = {
                 $nin:
-                  k === this._pk ? where[k][1].map(ObjectId) : where[k][1],
+                  k === this.pk ? where[k][1].map(ObjectId) : where[k][1],
               };
               break;
             case 'LIKE': {
@@ -118,7 +119,12 @@ module.exports = class extends Base {
       instance.field(field);
     }
 
-    return instance.select();
+    const data = await instance.select();
+    return data.map(item => {
+      item[this.pk] = item[this._pk].toString();
+      delete item[this._pk];
+      return item;
+    });
   }
 
   async count(where = {}) {
@@ -130,7 +136,7 @@ module.exports = class extends Base {
   async add(data) {
     const instance = this.mongo(this.tableName);
     const id = await instance.add(data);
-    return id;
+    return { ...data, [this.pk]: id.toString() };
   }
 
   async update(data, where) {

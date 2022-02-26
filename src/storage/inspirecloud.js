@@ -13,6 +13,7 @@ module.exports = class InspireModel extends Base {
   constructor(tableName, config) {
     super(tableName, config);
     this.db = InspireModel.connect(config);
+    this.pk = config.primaryKey;
   }
 
   get _pk() {
@@ -25,7 +26,7 @@ module.exports = class InspireModel extends Base {
       return _where;
     }
 
-    const parseKey = (k) => k;
+    const parseKey = (k) => (k === this.pk ? this._pk : k);
     for (const k in where) {
       if (k === '_complex') {
         continue;
@@ -33,7 +34,7 @@ module.exports = class InspireModel extends Base {
 
       if (helper.isString(where[k])) {
         _where[parseKey(k)] =
-          k === this._pk ? this.db.ObjectId(where[k]) : where[k];
+          k === this.pk ? this.db.ObjectId(where[k]) : where[k];
         continue;
       }
       if (where[k] === undefined) {
@@ -46,7 +47,7 @@ module.exports = class InspireModel extends Base {
             case 'IN':
               _where[parseKey(k)] = {
                 $in:
-                  k === this._pk
+                  k === this.pk
                     ? where[k][1].map(this.db.ObjectId)
                     : where[k][1],
               };
@@ -54,7 +55,7 @@ module.exports = class InspireModel extends Base {
             case 'NOT IN':
               _where[parseKey(k)] = {
                 $nin:
-                  k === this._pk
+                  k === this.pk
                     ? where[k][1].map(this.db.ObjectId)
                     : where[k][1],
               };
@@ -129,7 +130,12 @@ module.exports = class InspireModel extends Base {
       query.projection(_field);
     }
 
-    return query.find();
+    const data = await query.find();
+    data.forEach((item) => {
+      item[this.pk] = item[this._pk].toString();
+      delete item[this._pk];
+    });
+    return data;
   }
 
   async select(where, options = {}) {
@@ -157,7 +163,9 @@ module.exports = class InspireModel extends Base {
     const tableData = instance.create(data);
     await instance.save(tableData);
 
-    return tableData._id.toString();
+    tableData[this.pk] = tableData[this._pk].toString();
+    delete tableData[this._pk];
+    return tableData;
   }
 
   async update(data, where) {

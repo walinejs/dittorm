@@ -12,6 +12,7 @@ module.exports = class DetaModel extends Base {
     super(tableName, config);
     const deta = DetaModel.connect(config);
     this.instance = deta.Base(tableName);
+    this.pk = config.primaryKey;
   }
 
   get _pk() {
@@ -43,8 +44,8 @@ module.exports = class DetaModel extends Base {
   async uuid() {
     const items = await this.select({}, { limit: 1 });
     let lastKey;
-    if (items.length && !isNaN(parseInt(items[0][this._pk]))) {
-      lastKey = parseInt(items[0][this._pk]);
+    if (items.length && !isNaN(parseInt(items[0][this.pk]))) {
+      lastKey = parseInt(items[0][this.pk]);
     } else {
       lastKey = Number.MAX_SAFE_INTEGER - performance.now();
     }
@@ -56,7 +57,7 @@ module.exports = class DetaModel extends Base {
       return;
     }
 
-    const parseKey = k => k;
+    const parseKey = k => (k === this.pk ? this._pk : k);
     const conditions = {};
     const _isArrayKeys = [];
     for (let k in where) {
@@ -163,9 +164,15 @@ module.exports = class DetaModel extends Base {
       data = items || [];
     }
 
+    data = data.map(item => {
+      item[this.pk] = item[this._pk];
+      delete item[this._pk];
+      return item;
+    });
+
     if (Array.isArray(field)) {
       const fieldMap = new Set(field);
-      fieldMap.add(this._pk);
+      fieldMap.add(this.pk);
       data.forEach((item) => {
         for (const k in item) {
           if (!fieldMap.has(k)) {
@@ -193,7 +200,9 @@ module.exports = class DetaModel extends Base {
   async add(data) {
     const uuid = await this.uuid();
     const resp = await this.instance.put(data, uuid);
-    return resp[this._pk];
+    resp[this.pk] = resp[this._pk];
+    delete resp[this._pk];
+    return resp;
   }
 
   async update(data, where) {
@@ -202,7 +211,7 @@ module.exports = class DetaModel extends Base {
       items.map(async (item) => {
         const updateData = typeof data === 'function' ? data(item) : data;
         const nextData = { ...item, ...updateData };
-        await this.instance.put(nextData, item[this._pk]);
+        await this.instance.put(nextData, item[this.pk]);
         return nextData;
       })
     );
@@ -211,7 +220,7 @@ module.exports = class DetaModel extends Base {
   async delete(where) {
     const items = await this.select(where);
     return Promise.all(
-      items.map((item) => this.instance.delete(item[this._pk]))
+      items.map((item) => this.instance.delete(item[this.pk]))
     );
   }
 };

@@ -11,6 +11,7 @@ module.exports = function(type) {
   }
 
   return function(tableName, config) {
+    config.primaryKey = config.primaryKey || 'id';
     return new storages[type](tableName, config);
   }
 }

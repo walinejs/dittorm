@@ -15,6 +15,7 @@ module.exports = class CloudBase extends Base {
   constructor(tableName, config) {
     super(tableName, config);
     this.db = CloudBase.connect(config);
+    this.pk = config.primaryKey;
   }
 
   get _pk() {
@@ -49,7 +50,7 @@ module.exports = class CloudBase extends Base {
 
     const _ = this.db.command;
     const filter = {};
-    const parseKey = (k) => k;
+    const parseKey = (k) => (k === this.pk ? this._pk : k);
     for (let k in where) {
       if (k === '_complex') {
         continue;
@@ -138,7 +139,11 @@ module.exports = class CloudBase extends Base {
     }
 
     const { data } = await instance.get();
-    return data;
+    return data.map(item => {
+      item[this.pk] = item[this._pk].toString();
+      delete item[this._pk];
+      return item;
+    });
   }
 
   async select(where, options = {}) {
@@ -163,7 +168,7 @@ module.exports = class CloudBase extends Base {
   async add(data) {
     const instance = await this.collection(this.tableName);
     const { id } = await instance.add(data);
-    return id;
+    return { ...data, [this.pk]: id };
   }
 
   async update(data, where) {
