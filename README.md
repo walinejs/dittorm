@@ -87,7 +87,7 @@ const userModel = new Model('user', {
 ```
 
 | Name        | Required | Default | Description                                                                              |
-| ----------- | -------- | ------- |
+| ----------- | -------- | ------- | ---------------------------------------------------------------------------------------- |
 | `env`       | ✅        |         | CloudBase enviroment ID                                                                  |
 | `secretId`  | ✅        |         | CloudBase API secret Id, apply it at [here](https://console.cloud.tencent.com/cam/capi)  |
 | `secretKey` | ✅        |         | CloudBase API secret Key, apply it at [here](https://console.cloud.tencent.com/cam/capi) |
