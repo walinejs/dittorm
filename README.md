@@ -42,10 +42,11 @@ const userModel = new Model('user', {
 ```
 
 | Name        | Required | Default | Description |
-| ----------- | -------- | ------- |
+| ----------- | -------- | ------- | ----------- |
 | `appId`     | ✅        |         |             |
 | `appKey`    | ✅        |         |             |
 | `masterKey` | ✅        |         |             |
+
 #### Deta
 
 ```js
@@ -71,7 +72,7 @@ const userModel = new Model('user', {
 ```
 
 | Name            | Required | Default | Description                 |
-| --------------- | -------- | ------- |
+| --------------- | -------- | ------- | --------------------------- |
 | `serviceId`     | ✅        |         | InspireCloud Service ID     |
 | `serviceSecret` | ✅        |         | InspireCloud Service Secret |
 #### CloudBase
