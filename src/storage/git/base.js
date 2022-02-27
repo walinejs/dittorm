@@ -7,6 +7,11 @@ module.exports = class extends Base {
   constructor(tableName, config) {
     super(tableName, config);
     this.tableName = tableName;
+    this.pk = config.primaryKey;
+  }
+
+  get _pk() {
+    return 'id';
   }
 
   async collection(tableName) {
@@ -174,7 +179,7 @@ module.exports = class extends Base {
     const instance = await this.collection(this.tableName);
     const id = Math.random().toString(36).slice(2, 15);
 
-    instance.push({ ...data, id });
+    instance.push({ ...data, [this.pk]: id });
     await this.save(this.tableName, instance, instance.sha);
     return { ...data, [this.pk]: id };
   }

@@ -23,7 +23,9 @@ module.exports = class LeanCloudModel extends Base {
       return instance;
     }
 
-    where[this._pk] = where[this.pk];
+    if(where.hasOwnProperty(this.pk)) {
+      where[this._pk] = where[this.pk];
+    }
     for (const k in where) {
       if (k === '_complex' || k === this.pk) {
         continue;
