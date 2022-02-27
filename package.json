@@ -1,8 +1,8 @@
 {
-  "name": "ditto",
+  "name": "dittorm",
   "version": "1.0.0",
-  "description": "waline orm supports multiple serverless service",
-  "main": "index.js",
+  "description": "A Node.js ORM for MySQL, SQLite, PostgreSQL, MongoDB, GitHub and serverless service like Deta, InspireCloud, CloudBase, LeanCloud.",
+  "main": "src/index.js",
   "scripts": {
     "test": "nyc ava test/index.js && nyc report --reporter=html"
   },
@@ -10,13 +10,26 @@
     "type": "git",
     "url": "git+https://github.com/walinejs/ditto.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "github",
+    "nodejs",
+    "mysql",
+    "orm",
+    "mongodb",
+    "serverless",
+    "sqlite",
+    "postgresql",
+    "leancloud",
+    "deta",
+    "cloudbase",
+    "inspirecloud"
+  ],
+  "author": "lizheming<i@imnerd.org>",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/walinejs/ditto/issues"
+    "url": "https://github.com/walinejs/dittorm/issues"
   },
-  "homepage": "https://github.com/walinejs/ditto#readme",
+  "homepage": "https://github.com/walinejs/dittorm#readme",
   "dependencies": {
     "@byteinspire/api": "^1.0.12",
     "@cloudbase/node-sdk": "^2.7.1",
