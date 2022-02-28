@@ -4,11 +4,17 @@ const inspirecloud = require('./inspirecloud');
 const leancloud = require('./leancloud');
 const mongodb = require('./mongodb');
 const mysql = require('./mysql');
-const sqlite = require('./sqlite');
 const postgresql = require('./postgresql');
 const github = require('./git/github');
+let sqlite;
+try {
+  require('think-model-sqlite');
+  sqlite = require('./sqlite');
+} catch(e) {
+  // ignore error
+}
 
-module.exports = {
+const storages = {
   cloudbase,
   deta,
   github,
@@ -16,6 +22,10 @@ module.exports = {
   leancloud,
   mongodb,
   mysql,
-  sqlite,
   postgresql
 };
+if(sqlite) {
+  storages.sqlite = sqlite;
+}
+
+module.exports = storages;

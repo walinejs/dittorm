@@ -1,5 +1,10 @@
 const Model = require('think-model/lib/model');
-const SQLite = require('think-model-sqlite');
+let SQLite = function() {};
+try {
+  SQLite = require('think-model-sqlite');
+} catch(e) {
+  // ignore error
+}
 const MySQLModel = require('./mysql');
 
 module.exports = class SQLiteModel extends MySQLModel {
