@@ -61,7 +61,7 @@ module.exports = class DetaModel extends Base {
     const conditions = {};
     const _isArrayKeys = [];
     for (let k in where) {
-      if (helper.isString(where[k])) {
+      if (helper.isString(where[k]) || helper.isNumber(where[k]) || helper.isBoolean(where[k])) {
         conditions[parseKey(k)] = where[k];
         continue;
       }

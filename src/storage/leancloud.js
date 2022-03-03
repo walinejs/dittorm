@@ -31,7 +31,7 @@ module.exports = class LeanCloudModel extends Base {
         continue;
       }
 
-      if (helper.isString(where[k])) {
+      if (helper.isString(where[k]) || helper.isNumber(where[k]) || helper.isBoolean(where[k])) {
         instance.equalTo(k, where[k]);
         continue;
       }

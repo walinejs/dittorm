@@ -25,7 +25,7 @@ module.exports = class extends Base {
       if (k === '_complex') {
         continue;
       }
-      if (helper.isString(where[k])) {
+      if (helper.isString(where[k]) || helper.isNumber(where[k]) || helper.isBoolean(where[k])) {
         filter[parseKey(k)] = {
           $eq: k === this.pk ? ObjectId(where[k]) : where[k],
         };

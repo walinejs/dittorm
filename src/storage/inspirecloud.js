@@ -32,7 +32,7 @@ module.exports = class InspireModel extends Base {
         continue;
       }
 
-      if (helper.isString(where[k])) {
+      if (helper.isString(where[k]) || helper.isNumber(where[k]) || helper.isBoolean(where[k])) {
         _where[parseKey(k)] =
           k === this.pk ? this.db.ObjectId(where[k]) : where[k];
         continue;
