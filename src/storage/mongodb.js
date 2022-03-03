@@ -102,7 +102,7 @@ module.exports = class extends Base {
 
     return instance.where({
       // $or, $and, $not, $nor
-      [`$${where._complex._logic}`]: filters,
+      [`$${where._complex._logic.toLowerCase()}`]: filters,
     });
   }
 
