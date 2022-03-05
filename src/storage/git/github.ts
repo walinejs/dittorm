@@ -1,15 +1,19 @@
-const { request } = require('undici');
-const path = require('path');
-const Base = require('./base');
+import { request } from 'undici';
+import path from 'path';
+import Base, { GitInstance } from './base';
+import { DittormConfigBase } from '../base';
 
-class GitHub {
-  constructor(repo, token) {
+class GitHub<T> implements GitInstance<T> {
+  token: string;
+  repo: string;
+
+  constructor(repo: string, token: string) {
     this.token = token;
     this.repo = repo;
   }
 
   // content api can only get file < 1MB
-  async get(filename) {
+  async get(filename: string) {
     const url = 'https://api.github.com/repos/' +
     path.join(this.repo, 'contents', filename);
 
@@ -34,7 +38,7 @@ class GitHub {
   }
 
   // blob api can get file larger than 1MB
-  async getLargeFile(filename) {
+  async getLargeFile(filename: string) {
     const url = 'https://api.github.com/repos/' +
     path.join(this.repo, 'git/trees/HEAD') +
     '?recursive=1';
@@ -47,9 +51,10 @@ class GitHub {
       },
     }).then(resp => resp.body.json());
 
-    const file = tree.find(({ path }) => path === filename);
+    const file = tree.find(({ path }: { path: string}) => path === filename);
     if (!file) {
       const error = new Error('NOT FOUND');
+      //@ts-ignore
       error.statusCode = 404;
       throw error;
     }
@@ -63,7 +68,7 @@ class GitHub {
     }).then(resp => resp.body.text());
   }
 
-  async set(filename, content, { sha }) {
+  async set(filename: string, content: string, { sha }: { sha?: string}) {
     const url = 'https://api.github.com/repos/' +
     path.join(this.repo, 'contents', filename);
 
@@ -83,10 +88,12 @@ class GitHub {
   }
 }
 
-module.exports = class GitHubModel extends Base {
-  constructor(tableName, config) {
+export type GitHubModelConfig = ({repo: string, token: string, path?: string}) & DittormConfigBase;
+
+export default class GitHubModel<T> extends Base<T> {
+  constructor(tableName: string, config: GitHubModelConfig) {
     super(tableName, config);
-    this.git = new GitHub(config.repo, config.token);
-    this.basePath = config.path;
+    this.git = new GitHub<T>(config.repo, config.token);
+    this.basePath = config.path || './';
   }
 }

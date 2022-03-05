@@ -1,7 +1,7 @@
 require('dotenv').config();
 const test = require('ava');
 const config = require('./config');
-const Ditto = require('../src');
+const Ditto = require('../lib');
 
 for(const type in config) {
   const url = 'test-for-ditto';

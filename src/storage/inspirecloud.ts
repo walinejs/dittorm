@@ -1,16 +1,30 @@
-const { Inspirecloud } = require('@byteinspire/api');
-const helper = require('think-helper');
-const Base = require('./base');
-module.exports = class InspireModel extends Base {
-  static connect(config = {}) {
+import { Inspirecloud } from '@byteinspire/api';
+import helper from 'think-helper';
+import { SelectOptions } from '../types/selectOption';
+import { Where } from '../types/where';
+import Base, { DittormConfigBase } from './base';
+
+interface InspirecloudConfig {
+  serviceId: string;
+  serviceSecret: string;
+  endpoint?: string;
+}
+
+export type InspireModelConfig = InspirecloudConfig & DittormConfigBase;
+
+export default class InspireModel<T> extends Base<T> {
+  db: any;
+
+  static connect(config: InspireModelConfig) {
     if(!config.endpoint) {
       config.endpoint = process.env.INSPIRECLOUD_API_ENDPOINT || 'https://larkcloud-api.bytedance.com';
     }
+    //@ts-ignore
     const inspirecloud = new Inspirecloud(config);
     return inspirecloud.db;
   }
 
-  constructor(tableName, config) {
+  constructor(tableName: string, config: InspireModelConfig) {
     super(tableName, config);
     this.db = InspireModel.connect(config);
     this.pk = config.primaryKey;
@@ -20,64 +34,86 @@ module.exports = class InspireModel extends Base {
     return '_id';
   }
 
-  parseWhere(where) {
+  parseWhere(where: Where<T>) {
     const _where = {};
     if (helper.isEmpty(where)) {
       return _where;
     }
 
-    const parseKey = (k) => (k === this.pk ? this._pk : k);
+    const parseKey = (k: string) => (k === this.pk ? this._pk : k);
     for (const k in where) {
       if (k === '_complex') {
         continue;
       }
 
+      //@ts-ignore
       if (helper.isString(where[k]) || helper.isNumber(where[k]) || helper.isBoolean(where[k])) {
+        //@ts-ignore
         _where[parseKey(k)] =
+          //@ts-ignore
           k === this.pk ? this.db.ObjectId(where[k]) : where[k];
         continue;
       }
+      //@ts-ignore
       if (where[k] === undefined) {
+        //@ts-ignore
         _where[parseKey(k)] = undefined;
       }
+      //@ts-ignore
       if (Array.isArray(where[k])) {
+        //@ts-ignore
         if (where[k][0]) {
+          //@ts-ignore
           const handler = where[k][0].toUpperCase();
           switch (handler) {
             case 'IN':
+              //@ts-ignore
               _where[parseKey(k)] = {
                 $in:
                   k === this.pk
+                    //@ts-ignore
                     ? where[k][1].map(this.db.ObjectId)
+                    //@ts-ignore
                     : where[k][1],
               };
               break;
             case 'NOT IN':
+              //@ts-ignore
               _where[parseKey(k)] = {
                 $nin:
                   k === this.pk
+                    //@ts-ignore
                     ? where[k][1].map(this.db.ObjectId)
+                    //@ts-ignore
                     : where[k][1],
               };
               break;
             case 'LIKE': {
+              //@ts-ignore
               const first = where[k][1][0];
+              //@ts-ignore
               const last = where[k][1].slice(-1);
               let reg;
               if (first === '%' && last === '%') {
+                //@ts-ignore
                 reg = new RegExp(where[k][1].slice(1, -1));
               } else if (first === '%') {
+                //@ts-ignore
                 reg = new RegExp(where[k][1].slice(1) + '$');
               } else if (last === '%') {
+                //@ts-ignore
                 reg = new RegExp('^' + where[k][1].slice(0, -1));
               }
+              //@ts-ignore
               _where[parseKey(k)] = { $regex: reg };
               break;
             }
             case '!=':
+              //@ts-ignore
               _where[parseKey(k)] = { $ne: where[k] };
               break;
             case '>':
+              //@ts-ignore
               _where[parseKey(k)] = { $gt: where[k] };
               break;
           }
@@ -88,6 +124,7 @@ module.exports = class InspireModel extends Base {
     return _where;
   }
 
+  //@ts-ignore
   where(where) {
     const filter = this.parseWhere(where);
     if (!where._complex) {
@@ -101,6 +138,7 @@ module.exports = class InspireModel extends Base {
       }
 
       filters.push({
+        //@ts-ignore
         ...this.parseWhere({ [k]: where._complex[k] }),
         ...filter,
       });
@@ -109,7 +147,8 @@ module.exports = class InspireModel extends Base {
     return { [`$${where._complex._logic}`]: filters };
   }
 
-  async _select(where, { desc, limit, offset, field } = {}) {
+  //@ts-ignore
+  async _select(where: Where<T>, { desc, limit, offset, field }: SelectOptions = {}) {
     const instance = this.db.table(this.tableName);
     const query = instance.where(this.where(where));
 
@@ -124,22 +163,26 @@ module.exports = class InspireModel extends Base {
     }
     if (field) {
       const _field = {};
+      //@ts-ignore
       field.forEach((f) => {
+        //@ts-ignore
         _field[f] = 1;
       });
       query.projection(_field);
     }
 
     const data = await query.find();
-    data.forEach((item) => {
+    data.forEach((item: T) => {
+      //@ts-ignore
       item[this.pk] = item[this._pk].toString();
+      //@ts-ignore
       delete item[this._pk];
     });
     return data;
   }
 
-  async select(where, options = {}) {
-    let data = [];
+  async select(where: Where<T>, options: SelectOptions = {}) {
+    let data: T[] = [];
     let ret = [];
     let offset = options.offset || 0;
     do {
@@ -158,7 +201,7 @@ module.exports = class InspireModel extends Base {
     return query.count();
   }
 
-  async add(data) {
+  async add(data: Partial<T>) {
     const instance = this.db.table(this.tableName);
     const tableData = instance.create(data);
     await instance.save(tableData);
@@ -168,15 +211,16 @@ module.exports = class InspireModel extends Base {
     return tableData;
   }
 
-  async update(data, where) {
+  async update(data: Partial<T> | ((item: T) => T), where: Where<T>) {
     const instance = this.db.table(this.tableName);
     const query = instance.where(this.where(where));
     const items = await query.find();
 
     return Promise.all(
-      items.map(async (item) => {
+      items.map(async (item: T) => {
         const updateData = typeof data === 'function' ? data(item) : data;
         for (const k in updateData) {
+          //@ts-ignore
           item[k] = updateData[k];
         }
         await instance.save(item);
@@ -185,7 +229,7 @@ module.exports = class InspireModel extends Base {
     );
   }
 
-  async delete(where) {
+  async delete(where: Where<T>) {
     const instance = this.db.table(this.tableName);
     const query = instance.where(this.where(where));
     return query.delete();
