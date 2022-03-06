@@ -2,7 +2,7 @@
   "name": "dittorm",
   "version": "1.0.0-alpha.2",
   "description": "A Node.js ORM for MySQL, SQLite, PostgreSQL, MongoDB, GitHub and serverless service like Deta, InspireCloud, CloudBase, LeanCloud.",
-  "main": "lib/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "prepublish": "npm run compile",
     "compile": "tsc",
@@ -59,7 +59,7 @@
     "think-model-sqlite": "^1.2.2"
   },
   "files": [
-    "lib",
+    "dist",
     "src",
     "package.json",
     "package-lock.json",
