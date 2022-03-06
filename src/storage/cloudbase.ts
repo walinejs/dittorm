@@ -1,20 +1,29 @@
-const cloudbase = require('@cloudbase/node-sdk');
-const helper = require('think-helper');
-const Base = require('./base');
+import CloudBase from '@cloudbase/node-sdk';
+import helper from 'think-helper';
+import { SelectOptions } from '../types/selectOption';
+import { Where } from '../types/where';
+import Base, { DittormConfigBase } from './base';
 
+const collections: Record<string, boolean> = {};
 
-const collections = {};
+interface CloudBaseError extends Error {
+  code: string;
+}
 
-module.exports = class CloudBase extends Base {
-  static connect(config) {
-    const app = cloudbase.init(config);
+export type CloudBaseModelConfig = CloudBase.ICloudBaseConfig & DittormConfigBase;
+export default class CloudBaseModel<T> extends Base<T> {
+  db: CloudBase.Database.Db;
+  pk: string;
+
+  static connect(config: CloudBaseModelConfig) {
+    const app = CloudBase.init(config);
     const db = app.database();
     return db;
   }
 
-  constructor(tableName, config) {
+  constructor(tableName: string, config: CloudBaseModelConfig) {
     super(tableName, config);
-    this.db = CloudBase.connect(config);
+    this.db = CloudBaseModel.connect(config);
     this.pk = config.primaryKey;
   }
 
@@ -22,7 +31,7 @@ module.exports = class CloudBase extends Base {
     return '_id';
   }
 
-  async collection(tableName) {
+  async collection(tableName: string) {
     const db = this.db;
     if (collections[tableName]) {
       return db.collection(tableName);
@@ -34,7 +43,7 @@ module.exports = class CloudBase extends Base {
       collections[tableName] = true;
       return db.collection(tableName);
     } catch (e) {
-      if (e.code === 'DATABASE_COLLECTION_NOT_EXIST') {
+      if ((e as CloudBaseError).code === 'DATABASE_COLLECTION_NOT_EXIST') {
         await db.createCollection(tableName);
         collections[tableName] = true;
         return db.collection(tableName);
@@ -43,55 +52,56 @@ module.exports = class CloudBase extends Base {
     }
   }
 
-  parseWhere(where) {
+  parseWhere(where: Where<T>) {
     if (helper.isEmpty(where)) {
       return {};
     }
 
     const _ = this.db.command;
-    const filter = {};
-    const parseKey = (k) => (k === this.pk ? this._pk : k);
+    const filter: Record<string, unknown> = {};
+    const parseKey = (k: string) => (k === this.pk ? this._pk : k);
     for (let k in where) {
-      if (k === '_complex') {
+      if (k === '_complex' || k === '_logic') {
         continue;
       }
-      if (helper.isString(where[k]) || helper.isNumber(where[k]) || helper.isBoolean(where[k])) {
-        filter[parseKey(k)] = _.eq(where[k]);
+      if (helper.isString(where[k as keyof T]) || helper.isNumber(where[k as keyof T]) || helper.isBoolean(where[k as keyof T])) {
+        filter[parseKey(k)] = _.eq(where[k as keyof T]);
         continue;
       }
-      if (where[k] === undefined) {
+      if (where[k as keyof T] === undefined) {
         filter[parseKey(k)] = _.eq(null);
       }
-      if (Array.isArray(where[k])) {
-        if (where[k][0]) {
-          const handler = where[k][0].toUpperCase();
+      const filterValue = where[k as keyof T];
+      if (Array.isArray(filterValue)) {
+        if (filterValue[0]) {
+          const handler = filterValue[0].toUpperCase();
           switch (handler) {
             case 'IN':
-              filter[parseKey(k)] = _.in(where[k][1]);
+              filter[parseKey(k)] = _.in(filterValue[1]);
               break;
             case 'NOT IN':
-              filter[parseKey(k)] = _.nin(where[k][1]);
+              filter[parseKey(k)] = _.nin(filterValue[1]);
               break;
             case 'LIKE': {
-              const first = where[k][1][0];
-              const last = where[k][1].slice(-1);
+              const first = filterValue[0];
+              const last = filterValue[1].slice(-1);
               let reg;
               if (first === '%' && last === '%') {
-                reg = new RegExp(where[k][1].slice(1, -1));
+                reg = new RegExp(filterValue[1].slice(1, -1));
               } else if (first === '%') {
-                reg = new RegExp(where[k][1].slice(1) + '$');
+                reg = new RegExp(filterValue[1].slice(1) + '$');
               } else if (last === '%') {
-                reg = new RegExp('^' + where[k][1].slice(0, -1));
+                reg = new RegExp('^' + filterValue[1].slice(0, -1));
               }
               filter[parseKey(k)] = reg;
               break;
             }
             case '!=': {
-              filter[parseKey(k)] = _.neq(where[k][1]);
+              filter[parseKey(k)] = _.neq(filterValue[1]);
               break;
             }
             case '>': {
-              filter[parseKey(k)] = _.gt(where[k][1]);
+              filter[parseKey(k)] = _.gt(filterValue[1]);
               break;
             }
           }
@@ -101,7 +111,8 @@ module.exports = class CloudBase extends Base {
     return filter;
   }
 
-  where(instance, where) {
+  where(instance: CloudBase.Database.CollectionReference, where:Where<T>) {
+    const _ = this.db.command;
     const filter = this.parseWhere(where);
     if (!where._complex) {
       return instance.where(filter);
@@ -113,6 +124,7 @@ module.exports = class CloudBase extends Base {
         continue;
       }
       filters.push({
+        //@ts-ignore
         ...this.parseWhere({ [k]: where._complex[k] }),
         ...filter,
       });
@@ -120,22 +132,22 @@ module.exports = class CloudBase extends Base {
     return instance.where(_[where._complex._logic](...filters));
   }
 
-  async _select(where, { desc, limit, offset, field } = {}) {
-    let instance = await this.collection(this.tableName);
-    instance = this.where(instance, where);
+  async _select(where: Where<T>, { desc, limit, offset, field }: SelectOptions = {}) {
+    const instance = await this.collection(this.tableName);
+    let query = this.where(instance, where);
     if (desc) {
-      instance = instance.orderBy(desc, 'desc');
+      query = instance.orderBy(desc, 'desc');
     }
     if (limit) {
-      instance = instance.limit(limit);
+      query = instance.limit(limit);
     }
     if (offset) {
-      instance = instance.skip(offset);
+      query = instance.skip(offset);
     }
     if (field) {
-      const filedObj = {};
+      const filedObj:Record<string, boolean> = {};
       field.forEach((f) => (filedObj[f] = true));
-      instance = instance.field(filedObj);
+      query = instance.field(filedObj);
     }
 
     const { data } = await instance.get();
@@ -146,8 +158,8 @@ module.exports = class CloudBase extends Base {
     });
   }
 
-  async select(where, options = {}) {
-    let data = [];
+  async select(where: Where<T>, options: SelectOptions = {}) {
+    let data:T[] = [];
     let ret = [];
     let offset = options.offset || 0;
     do {
@@ -159,19 +171,19 @@ module.exports = class CloudBase extends Base {
     return data;
   }
 
-  async count(where = {}) {
+  async count(where:Where<T> = {}) {
     const instance = await this.collection(this.tableName);
     const { total } = await this.where(instance, where).count();
-    return total;
+    return total || 0;
   }
 
-  async add(data) {
+  async add(data: Partial<T>) {
     const instance = await this.collection(this.tableName);
     const { id } = await instance.add(data);
     return { ...data, [this.pk]: id };
   }
 
-  async update(data, where) {
+  async update(data: Partial<T> | ((item: T) => T), where: Where<T>) {
     const instance = await this.collection(this.tableName);
     const { data: list } = await this.where(instance, where).get();
 
@@ -185,8 +197,8 @@ module.exports = class CloudBase extends Base {
     );
   }
 
-  async delete(where) {
+  async delete(where: Where<T>) {
     const instance = await this.collection(this.tableName);
-    return this.where(instance, where).remove();
+    this.where(instance, where).remove();
   }
 };

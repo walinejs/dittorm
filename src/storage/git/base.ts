@@ -1,10 +1,22 @@
-const path = require('path');
-const helper = require('think-helper');
-const { parseString, writeToString } = require('fast-csv');
-const Base = require('../base');
+import path from 'path';
+import helper from 'think-helper';
+import { parseString, writeToString } from 'fast-csv';
+import Base, { DittormConfigBase } from '../base';
+import { Where } from '../../types/where';
+import { SelectOptions } from '../../types/selectOption';
 
-module.exports = class extends Base {
-  constructor(tableName, config) {
+export interface GitInstance<T> {
+  get: (filename: string) => Promise<any>;
+  set: (filename: string, data: string, options: any) => void;
+}
+
+export default class GitBase<T> extends Base<T> {
+  //@ts-ignore
+  basePath: string;
+  //@ts-ignore
+  git: GitInstance<T>;
+
+  constructor(tableName: string, config: DittormConfigBase) {
     super(tableName, config);
     this.tableName = tableName;
     this.pk = config.primaryKey;
@@ -14,7 +26,7 @@ module.exports = class extends Base {
     return 'id';
   }
 
-  async collection(tableName) {
+  async collection(tableName: string) {
     const filename = path.join(this.basePath, tableName + '.csv');
     const file = await this.git.get(filename).catch((e) => {
       if (e.statusCode === 404) {
@@ -24,8 +36,10 @@ module.exports = class extends Base {
     });
 
     return new Promise((resolve, reject) => {
-      const data = [];
+      const data: T[] = [];
+      //@ts-ignore
       data.sha = file.sha;
+      //@ts-ignore
       return parseString(file.data, {
         headers: true,
       })
@@ -35,7 +49,7 @@ module.exports = class extends Base {
     });
   }
 
-  async save(tableName, data, sha) {
+  async save(tableName: string, data: T[], sha: string) {
     const filename = path.join(this.basePath, tableName + '.csv');
     const csv = await writeToString(data, {
       headers: true,
@@ -44,8 +58,8 @@ module.exports = class extends Base {
     return this.git.set(filename, csv, { sha });
   }
 
-  parseWhere(where) {
-    const _where = [];
+  parseWhere(where:any) {
+    const _where: ((item: T) => boolean)[] = [];
     if (helper.isEmpty(where)) {
       return _where;
     }
@@ -57,10 +71,12 @@ module.exports = class extends Base {
       }
 
       if (helper.isNumber(where[k]) || helper.isString(where[k])) {
-        filters.push((item) => item[k] === where[k]);
+        //@ts-ignore
+        filters.push((item: T) => item[k] === where[k]);
         continue;
       }
       if (where[k] === undefined) {
+        //@ts-ignore
         filters.push((item) => item[k] === null || item[k] === undefined);
       }
       if (!Array.isArray(where[k]) || !where[k][0]) {
@@ -70,15 +86,17 @@ module.exports = class extends Base {
       const handler = where[k][0].toUpperCase();
       switch (handler) {
         case 'IN':
+          //@ts-ignore
           filters.push((item) => where[k][1].includes(item[k]));
           break;
         case 'NOT IN':
+          //@ts-ignore
           filters.push((item) => !where[k][1].includes(item[k]));
           break;
         case 'LIKE': {
           const first = where[k][1][0];
           const last = where[k][1].slice(-1);
-          let reg;
+          let reg: RegExp;
           if (first === '%' && last === '%') {
             reg = new RegExp(where[k][1].slice(1, -1));
           } else if (first === '%') {
@@ -86,13 +104,16 @@ module.exports = class extends Base {
           } else if (last === '%') {
             reg = new RegExp('^' + where[k][1].slice(0, -1));
           }
+          //@ts-ignore
           filters.push((item) => reg.test(item[k]));
           break;
         }
         case '!=':
+          //@ts-ignore
           filters.push((item) => item[k] !== where[k][1]);
           break;
         case '>':
+          //@ts-ignore
           filters.push((item) => item[k] >= where[k][1]);
           break;
       }
@@ -101,7 +122,7 @@ module.exports = class extends Base {
     return filters;
   }
 
-  where(data, where) {
+  where(data: T[], where:Where<T>) {
     const filter = this.parseWhere(where);
 
     if (!where._complex) {
@@ -112,31 +133,35 @@ module.exports = class extends Base {
       and: Array.prototype.every,
       or: Array.prototype.some,
     };
-    const filters = [];
+    const filters: any[] = [];
     for (const k in where._complex) {
       if (k === '_logic') {
         continue;
       }
 
+      //@ts-ignore
       filters.push([...filter, ...this.parseWhere({ [k]: where._complex[k] })]);
     }
 
     const logicFn = logicMap[where._complex._logic];
     return data.filter((item) =>
-      logicFn.call(filters, (filter) => filter.every((fn) => fn(item)))
+      logicFn.call(filters, (filter) => filter.every((fn:(item: T) => boolean) => fn(item)))
     );
   }
 
-  async select(where, { desc, limit, offset, field } = {}) {
+  async select(where:Where<T>, { desc, limit, offset, field }:SelectOptions = {}) {
     const instance = await this.collection(this.tableName);
-    let data = this.where(instance, where);
+    let data = this.where(instance as T[], where);
     if (desc) {
       data.sort((a, b) => {
         if (['insertedAt', 'createdAt', 'updatedAt'].includes(desc)) {
+          //@ts-ignore
           const aTime = new Date(a[desc]).getTime();
+          //@ts-ignore
           const bTime = new Date(b[desc]).getTime();
           return bTime - aTime;
         }
+        //@ts-ignore
         return a[desc] - b[desc];
       });
     }
@@ -145,11 +170,15 @@ module.exports = class extends Base {
     if (field) {
       field.push('id');
       const fieldObj = {};
+      //@ts-ignore
       field.forEach((f) => (fieldObj[f] = true));
+      //@ts-ignore
       data = data.map((item) => {
         const ret = {};
         for (const k in item) {
+          //@ts-ignore
           if (fieldObj[k]) {
+            //@ts-ignore
             ret[k] = item[k];
           }
         }
@@ -158,36 +187,42 @@ module.exports = class extends Base {
     }
 
     return data.map(item => {
+      //@ts-ignore
       item[this.pk] = item[this._pk];
+      //@ts-ignore
       delete item[this._pk];
       return item;
     });
   }
 
   // eslint-disable-next-line no-unused-vars
-  async count(where = {}, options = {}) {
+  async count(where:Where<T> = {}, options = {}) {
     const instance = await this.collection(this.tableName);
-    const data = this.where(instance, where);
+    const data = this.where(instance as T[], where);
     return data.length;
   }
 
   async add(
-    data,
+    data: Partial<T>,
     // eslint-disable-next-line no-unused-vars
     { access: { read = true, write = true } = { read: true, write: true } } = {}
   ) {
     const instance = await this.collection(this.tableName);
     const id = Math.random().toString(36).slice(2, 15);
 
+    //@ts-ignore
     instance.push({ ...data, [this.pk]: id });
+    //@ts-ignore
     await this.save(this.tableName, instance, instance.sha);
     return { ...data, [this.pk]: id };
   }
 
-  async update(data, where) {
+  async update(data: Partial<T>|((item: T) => T), where: Where<T>) {
+    //@ts-ignore
     delete data[this.pk];
     
     const instance = await this.collection(this.tableName);
+    //@ts-ignore
     const list = this.where(instance, where);
 
     list.forEach((item) => {
@@ -195,19 +230,25 @@ module.exports = class extends Base {
         data(item);
       } else {
         for (const k in data) {
+          //@ts-ignore
           item[k] = data[k];
         }
       }
     });
+    //@ts-ignore
     await this.save(this.tableName, instance, instance.sha);
     return list;
   }
 
-  async delete(where) {
+  async delete(where: Where<T>) {
     const instance = await this.collection(this.tableName);
+    //@ts-ignore
     const deleteData = this.where(instance, where);
+    //@ts-ignore
     const deleteId = deleteData.map(({ id }) => id);
+    //@ts-ignore
     const data = instance.filter((data) => !deleteId.includes(data.id));
+    //@ts-ignore
     await this.save(this.tableName, data, instance.sha);
   }
 };
