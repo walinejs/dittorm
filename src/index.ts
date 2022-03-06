@@ -1,7 +1,8 @@
 import storages from './storage';
 
 type StorageTypes = keyof typeof storages;
-module.exports = function(_type: StorageTypes) {
+
+export default function(_type: StorageTypes) {
   if (!_type) {
     throw Error('type is required!');
   }
@@ -13,9 +14,9 @@ module.exports = function(_type: StorageTypes) {
     throw Error(`${type} service not supports yet!`);
   }
 
-  return function(tableName: string, config: ConstructorParameters<typeof storage>[1]) {
+  return function<T>(tableName: string, config: ConstructorParameters<typeof storage>[1]) {
     config.primaryKey = config.primaryKey || 'id';
     //@ts-ignore
-    return new storage(tableName, config);
+    return new storage<T>(tableName, config);
   }
 }

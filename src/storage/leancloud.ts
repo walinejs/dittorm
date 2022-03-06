@@ -6,10 +6,10 @@ import Base, { DittormConfigBase } from './base';
 
 
 type LeanCloudInitOptions = Parameters<typeof AV.init>[0];
-interface AVCloudConfig {
+interface LeanCloudConfig {
   masterKey: string;
 }
-type LeanCloudModelConfig = LeanCloudInitOptions & AVCloudConfig & DittormConfigBase;
+export type LeanCloudModelConfig = LeanCloudInitOptions & LeanCloudConfig & DittormConfigBase;
 
 export default class LeanCloudModel<T> extends Base<T> {
   static connect(config: LeanCloudModelConfig) {
