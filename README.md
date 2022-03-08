@@ -150,7 +150,7 @@ const userModel = new Model('user', {
 const Model = require('dittorm')('postgresql');
 const userModel = new Model('user', {
   host: '127.0.0.1',
-  post: 5432,
+  port: 5432,
   database: 'blog',
   user: 'admin',
   password: 'admin',
@@ -173,7 +173,7 @@ const userModel = new Model('user', {
 const Model = require('dittorm')('mongodb');
 const userModel = new Model('user', {
   host: '127.0.0.1',
-  post: 5432,
+  port: 27017,
   database: 'blog',
   user: 'admin',
   password: 'admin',
