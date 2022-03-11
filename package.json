@@ -1,6 +1,6 @@
 {
   "name": "dittorm",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.3",
   "description": "A Node.js ORM for MySQL, SQLite, PostgreSQL, MongoDB, GitHub and serverless service like Deta, InspireCloud, CloudBase, LeanCloud.",
   "main": "dist/src/index.js",
   "scripts": {
