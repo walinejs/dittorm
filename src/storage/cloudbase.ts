@@ -152,8 +152,9 @@ export default class CloudBaseModel<T> extends Base<T> {
 
     const { data } = await instance.get();
     return data.map(item => {
-      item[this.pk] = item[this._pk].toString();
+      const pk = item[this._pk].toString();
       delete item[this._pk];
+      item[this.pk] = pk;
       return item;
     });
   }

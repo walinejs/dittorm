@@ -174,9 +174,11 @@ export default class InspireModel<T> extends Base<T> {
     const data = await query.find();
     data.forEach((item: T) => {
       //@ts-ignore
-      item[this.pk] = item[this._pk].toString();
+      const pk = item[this._pk].toString();
       //@ts-ignore
       delete item[this._pk];
+      //@ts-ignore
+      item[this.pk] = pk;
     });
     return data;
   }

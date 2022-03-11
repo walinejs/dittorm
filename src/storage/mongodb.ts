@@ -161,9 +161,11 @@ export default class MongoDBModel<T> extends Base<T> {
     const data = await instance.select();
     return data.map((item: T) => {
       //@ts-ignore
-      item[this.pk] = item[this._pk].toString();
+      const pk = item[this._pk].toString();
       //@ts-ignore
       delete item[this._pk];
+      //@ts-ignore
+      item[this.pk] = pk;
       return item;
     }) as T[];
   }

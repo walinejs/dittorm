@@ -177,9 +177,11 @@ export default class DetaModel<T> extends Base<T> {
 
     data = data.map(item => {
       //@ts-ignore
-      item[this.pk] = item[this._pk];
+      const pk = item[this._pk];
       //@ts-ignore
       delete item[this._pk];
+      //@ts-ignore
+      item[this.pk] = pk;
       return item;
     });
 
