@@ -18,29 +18,6 @@ export default class PostgreSQLModel<T> extends MySQLModel<T> {
   }
 
   //@ts-ignore
-  async select(...args) {
-    //@ts-ignore
-    const data = await super.select(...args);
-    //@ts-ignore
-    return data.map(({ insertedat, createdat, updatedat, ...item }) => {
-      const mapFields = {
-        insertedAt: insertedat,
-        createdAt: createdat,
-        updatedAt: updatedat,
-      };
-      for (const field in mapFields) {
-        //@ts-ignore
-        if (!mapFields[field]) {
-          continue;
-        }
-        //@ts-ignore
-        item[field] = mapFields[field];
-      }
-      return item;
-    });
-  }
-
-  //@ts-ignore
   async count(...args) {
     let result = await super.count(...args);
     try {
