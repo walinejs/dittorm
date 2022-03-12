@@ -11,6 +11,7 @@ interface ThinkModelHandle {
   handle: MySQL;
 };
 export type MySQLModelConfig = ConnectionConfig & DittormConfigBase & ThinkModelHandle;
+export type MySQLModelClass = typeof MySQLModel;
 
 export default class MySQLModel<T> extends Base<T> {
   model: (tableName: string) => typeof Model;

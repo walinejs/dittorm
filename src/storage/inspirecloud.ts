@@ -11,6 +11,7 @@ interface InspirecloudConfig {
 }
 
 export type InspireModelConfig = InspirecloudConfig & DittormConfigBase;
+export type InspireModelClass = typeof InspireModel;
 
 export default class InspireModel<T> extends Base<T> {
   db: any;

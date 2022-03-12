@@ -10,6 +10,7 @@ interface LeanCloudConfig {
   masterKey: string;
 }
 export type LeanCloudModelConfig = LeanCloudInitOptions & LeanCloudConfig & DittormConfigBase;
+export type LeanCloudModelClass = typeof LeanCloudModel;
 
 export default class LeanCloudModel<T> extends Base<T> {
   static connect(config: LeanCloudModelConfig) {

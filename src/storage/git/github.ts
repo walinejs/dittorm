@@ -89,6 +89,7 @@ class GitHub<T> implements GitInstance<T> {
 }
 
 export type GitHubModelConfig = ({repo: string, token: string, path?: string}) & DittormConfigBase;
+export type GitHubModelClass = typeof GitHubModel;
 
 export default class GitHubModel<T> extends Base<T> {
   constructor(tableName: string, config: GitHubModelConfig) {

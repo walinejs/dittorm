@@ -17,6 +17,7 @@ interface MongoDBConfig {
 }
 
 export type MongoDBModelConfig = MongoDBConfig & DittormConfigBase;
+export type MongoDBModelClass = typeof MongoDBModel;
 
 export default class MongoDBModel<T> extends Base<T> {
   mongo: (name: string) => typeof Model;

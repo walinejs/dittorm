@@ -9,6 +9,7 @@ interface HandleConfig {
   handle: PostgreSQL;
 }
 export type PostgreSQLModelConfig = ClientConfig & HandleConfig & DittormConfigBase;
+export type PostgreSQLModelClass = typeof PostgreSQLModel;
 
 export default class PostgreSQLModel<T> extends MySQLModel<T> {
   constructor(tableName: string, config: PostgreSQLModelConfig) {

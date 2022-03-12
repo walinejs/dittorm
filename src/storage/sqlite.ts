@@ -15,7 +15,7 @@ interface SQLiteConfig {
   handle: any;
 }
 export type SQLiteModelConfig = SQLiteConfig & DittormConfigBase;
-
+export type SQLiteModelClass = typeof SQLiteModel;
 export default class SQLiteModel<T> extends MySQLModel<T> {
   constructor(tableName: string, config: SQLiteModelConfig) {
     super(tableName, config);

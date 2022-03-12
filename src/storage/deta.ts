@@ -7,6 +7,7 @@ import { Where } from '../types/where';
 import { SelectOptions } from '../types/selectOption';
 
 export type DetaModelConfig = {token: string} & DittormConfigBase;
+export type DetaModelClass = typeof DetaModel;
 export default class DetaModel<T> extends Base<T> {
   instance: BaseClass;
 

@@ -1,11 +1,12 @@
-import cloudbase from './cloudbase';
-import deta from './deta';
-import inspirecloud from './inspirecloud';
-import leancloud from './leancloud';
-import mongodb from './mongodb';
-import mysql from './mysql';
-import postgresql from './postgresql';
-import github from './git/github';
+import cloudbase, { CloudBaseModelClass } from './cloudbase';
+import deta, { DetaModelClass } from './deta';
+import inspirecloud, { InspireModelClass } from './inspirecloud';
+import leancloud, { LeanCloudModelClass } from './leancloud';
+import mongodb, { MongoDBModelClass } from './mongodb';
+import mysql, { MySQLModelClass } from './mysql';
+import postgresql, { PostgreSQLModelClass } from './postgresql';
+import github, { GitHubModelClass } from './git/github';
+import type { SQLiteModelClass } from './sqlite';
 
 let sqlite;
 try {
@@ -15,7 +16,19 @@ try {
   // ignore error
 }
 
-const baseStorages = {
+export interface IStorages {
+  cloudbase: CloudBaseModelClass,
+  deta: DetaModelClass,
+  github: GitHubModelClass,
+  inspirecloud: InspireModelClass,
+  leancloud: LeanCloudModelClass,
+  mongodb: MongoDBModelClass,
+  mysql: MySQLModelClass,
+  postgresql: PostgreSQLModelClass,
+  sqlite: SQLiteModelClass
+};
+
+const baseStorages:IStorages = {
   cloudbase,
   deta,
   github,
@@ -24,10 +37,7 @@ const baseStorages = {
   mongodb,
   mysql,
   postgresql,
-  sqlite: undefined,
+  sqlite,
 };
-if(sqlite) {
-  baseStorages.sqlite = sqlite;
-}
 
 export default baseStorages;

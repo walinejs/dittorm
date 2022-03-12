@@ -11,6 +11,7 @@ interface CloudBaseError extends Error {
 }
 
 export type CloudBaseModelConfig = CloudBase.ICloudBaseConfig & DittormConfigBase;
+export type CloudBaseModelClass = typeof CloudBaseModel;
 export default class CloudBaseModel<T> extends Base<T> {
   db: CloudBase.Database.Db;
   pk: string;
