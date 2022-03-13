@@ -4,7 +4,7 @@
   "description": "A Node.js ORM for MySQL, SQLite, PostgreSQL, MongoDB, GitHub and serverless service like Deta, InspireCloud, CloudBase, LeanCloud.",
   "main": "dist/src/index.js",
   "scripts": {
-    "prepublish": "npm run compile",
+    "prepublishOnly": "npm run compile",
     "compile": "tsc",
     "test": "nyc ava test/index.js && nyc report --reporter=html"
   },
