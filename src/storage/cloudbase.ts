@@ -137,21 +137,21 @@ export default class CloudBaseModel<T> extends Base<T> {
     const instance = await this.collection(this.tableName);
     let query = this.where(instance, where);
     if (desc) {
-      query = instance.orderBy(desc, 'desc');
+      query = query.orderBy(desc, 'desc');
     }
     if (limit) {
-      query = instance.limit(limit);
+      query = query.limit(limit);
     }
     if (offset) {
-      query = instance.skip(offset);
+      query = query.skip(offset);
     }
     if (field) {
       const filedObj:Record<string, boolean> = {};
       field.forEach((f) => (filedObj[f] = true));
-      query = instance.field(filedObj);
+      query = query.field(filedObj);
     }
 
-    const { data } = await instance.get();
+    const { data } = await query.get();
     return data.map(item => {
       const pk = item[this._pk].toString();
       delete item[this._pk];
