@@ -45,7 +45,7 @@
     "think-model-mysql": "^1.1.6",
     "think-model-postgresql": "^1.1.7",
     "think-mongo": "^2.1.2",
-    "undici": "^4.14.1"
+    "undici": "^5.0.0"
   },
   "devDependencies": {
     "@types/mysql": "^2.15.21",
