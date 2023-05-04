@@ -53,7 +53,7 @@ function getConfigFromEnv(envs: NodeJS.ProcessEnv = {}) {
         database: envs.MONGO_DB,
         options: (function() {
                     try {
-                      return JSON.parse(envs.MONGO_OPTIONS);
+                      return JSON.parse(envs.MONGO_OPTIONS || '{}');
                     } catch(e) {
                       return {};
                     }
