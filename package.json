@@ -50,7 +50,7 @@
   "devDependencies": {
     "@types/mysql": "2.15.27",
     "@types/node": "17.0.45",
-    "@types/pg": "8.6.5",
+    "@types/pg": "8.15.2",
     "ava": "4.3.1",
     "dotenv": "16.0.1",
     "nyc": "15.1.0",
