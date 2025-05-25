@@ -54,7 +54,7 @@
     "ava": "4.3.3",
     "dotenv": "16.5.0",
     "nyc": "15.1.0",
-    "typescript": "4.7.4"
+    "typescript": "4.9.5"
   },
   "optionalDependencies": {
     "think-model-sqlite": "^1.2.2"
