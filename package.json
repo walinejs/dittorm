@@ -51,7 +51,7 @@
     "@types/mysql": "2.15.27",
     "@types/node": "22.19.1",
     "@types/pg": "8.15.6",
-    "ava": "6.3.0",
+    "ava": "6.4.1",
     "dotenv": "16.5.0",
     "nyc": "17.1.0",
     "typescript": "4.9.5"
