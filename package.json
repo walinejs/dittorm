@@ -36,7 +36,7 @@
     "@byteinspire/api": "^1.0.12",
     "@cloudbase/node-sdk": "^3.0.0",
     "deta": "^2.0.0",
-    "fast-csv": "^4.3.6",
+    "fast-csv": "^5.0.0",
     "leancloud-storage": "^4.12.2",
     "mongodb": "^7.0.0",
     "tablestore": "^5.1.1",
